@@ -15,7 +15,8 @@
 
 ## O que a IA errou
 
-- **Overflow de `int` no cálculo**: a implementação GREEN usava `Math.min(anos * taxa, 30)`. Com valores grandes (ex.: OURO com 600.000.000 anos), `anos * taxa` estoura `int` e o resultado vira negativo (`-1294967296`). Os testes gerados pela IA não cobriam esse caso.
+- **Overflow de `int` no cálculo**: a fórmula `Math.min(anos * taxa, 30)` veio da especificação do prompt escrito com o assistente de chat, e o Claude Code a implementou fielmente na etapa GREEN. Com valores grandes (ex.: OURO com 600.000.000 anos), `anos * taxa` estoura `int` e o resultado vira negativo (`-1294967296`). Nem o prompt nem os testes iniciais consideravam valores extremos.
+  - **Lição**: especificações em prompt também carregam bugs, e testes de borda são o que os revelam.
 - **Teste com `@CsvSource`**: a primeira versão do teste de `deTexto` usava `ignoreLeadingAndTrailingWhitespace = false` e `.trim()` no valor esperado, sem necessidade. O próprio Claude Code corrigiu antes do commit, já que espaços dentro de aspas simples no `@CsvSource` são preservados por padrão.
 - **Versão do Spring Boot**: o Spring Initializr só oferecia Spring Boot 4.x, enquanto o projeto pedia 3.x. O `pom.xml` foi escrito manualmente e fixado na 3.5.16 (última 3.x no Maven Central na data).
 
