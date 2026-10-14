@@ -6,12 +6,19 @@
 - **Claude (chat)**: segundo assistente, atuando como orquestrador (escreveu as instruções de cada etapa para o Claude Code) e como revisor do código gerado.
 - **Spring Initializr (start.spring.io)**: usado apenas para obter o Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/`) e o `.gitattributes`.
 
+## Convenção de commits e coautoria
+
+- Todos os commits produzidos com o Claude Code trazem o trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, para registrar de forma auditável o apoio de IA.
+- A autoria humana permanece: o Author de cada commit é o desenvolvedor, que aprovou o plano ou as instruções de cada etapa antes da execução e revisou o resultado (testes, saídas e código) antes de liberar o avanço.
+- Fluxo: o desenvolvedor aprova o plano, o Claude Code executa e mostra a evidência, o desenvolvedor revisa, e só então o trabalho avança. Cada etapa de TDD (RED, GREEN, REFACTOR) é um commit separado.
+
 ## O que funcionou
 
 - Trabalho em ciclos TDD (RED → GREEN → REFACTOR) com um commit por etapa, o que deixa o histórico auditável.
 - Na etapa RED, os testes falharam pelo motivo certo (`UnsupportedOperationException` ou asserção), sem erro de compilação.
 - Verificação por mutação do `strip()` em `Categoria.deTexto`: removido temporariamente, o caso `" prata "` falhou (`Categoria desconhecida: " prata "`); restaurado, todos os testes voltaram a passar. Isso provou que o teste realmente cobre o tratamento de espaços.
 - Os casos de borda da revisão (categoria nula e overflow) entraram test-first: teste falhando primeiro, correção depois.
+- Mutation check extra no `PedidoService` (trocar `LocalDate.now(clock)` por `LocalDate.now()`, sem o `Clock`): a mutação sobreviveu porque a data real do sistema coincidia com a do clock fixo dos testes (2026-10-14). O próprio Claude Code detectou e corrigiu antes do commit do GREEN, com testes que usam um clock em 2030-06-15. Lição: um teste que passa por coincidência é um teste frágil.
 
 ## O que a IA errou
 
