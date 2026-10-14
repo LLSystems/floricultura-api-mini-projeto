@@ -54,7 +54,7 @@ public class Pedido {
 	 * @param anos        anos de fidelidade (zero ou positivo)
 	 * @param valorBruto  valor antes do desconto (maior que zero)
 	 * @param dataEntrega data de entrega (igual ou posterior a {@code hoje})
-	 * @param hoje        data de referência, injetada para tornar o cálculo determinístico
+	 * @param hoje        data de referência (não nula), injetada para tornar o cálculo determinístico
 	 * @return o pedido criado, com status {@link StatusPedido#PENDENTE}
 	 * @throws IllegalArgumentException se algum dos dados for inválido
 	 * @see CalculadoraDesconto#calcular(Categoria, int)
@@ -66,6 +66,9 @@ public class Pedido {
 		}
 		if (valorBruto == null || valorBruto.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Valor bruto deve ser maior que zero: " + valorBruto);
+		}
+		if (hoje == null) {
+			throw new IllegalArgumentException("Data de referência (hoje) não pode ser nula");
 		}
 		if (dataEntrega == null || dataEntrega.isBefore(hoje)) {
 			throw new IllegalArgumentException("Data de entrega não pode ser nula nem anterior a hoje: " + dataEntrega);
