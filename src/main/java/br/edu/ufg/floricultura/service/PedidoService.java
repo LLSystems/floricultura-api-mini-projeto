@@ -25,17 +25,37 @@ public class PedidoService {
 		this.clock = clock;
 	}
 
+	/**
+	 * Cria e salva um pedido, usando a data atual do {@link Clock} como "hoje".
+	 *
+	 * @return o pedido salvo
+	 * @throws IllegalArgumentException se algum dado for inválido (ver {@link Pedido#criar})
+	 */
 	public Pedido criar(String cliente, Categoria categoria, int anos,
 			BigDecimal valorBruto, LocalDate dataEntrega) {
 		Pedido pedido = Pedido.criar(cliente, categoria, anos, valorBruto, dataEntrega, LocalDate.now(clock));
 		return repository.save(pedido);
 	}
 
+	/**
+	 * Lista os pedidos {@link StatusPedido#PENDENTE} com entrega na data informada.
+	 *
+	 * @param data data de entrega; se nula, usa a data atual do {@link Clock}
+	 * @return pedidos pendentes na data (lista vazia se não houver)
+	 */
 	public List<Pedido> listarEntregasPendentes(LocalDate data) {
 		LocalDate dia = (data != null) ? data : LocalDate.now(clock);
 		return repository.findByStatusAndDataEntrega(StatusPedido.PENDENTE, dia);
 	}
 
+	/**
+	 * Marca o pedido como entregue e o salva.
+	 *
+	 * @param id identificador do pedido
+	 * @return o pedido salvo, com status {@link StatusPedido#ENTREGUE}
+	 * @throws PedidoNaoEncontradoException se não existir pedido com o id
+	 * @throws br.edu.ufg.floricultura.exception.PedidoJaEntregueException se o pedido já estiver entregue
+	 */
 	@Transactional
 	public Pedido marcarEntregue(Long id) {
 		Pedido pedido = repository.findById(id)
