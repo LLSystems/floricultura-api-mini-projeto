@@ -1,5 +1,7 @@
 # Floricultura API
 
+[![CI](https://github.com/LLSystems/floricultura-api-mini-projeto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LLSystems/floricultura-api-mini-projeto/actions/workflows/ci.yml)
+
 Micro-API REST de pedidos de uma floricultura fictícia, desenvolvida como mini-projeto acadêmico (UFG/AKCIT).
 Cadastra pedidos com desconto de fidelidade, lista as entregas pendentes de um dia e registra a entrega.
 
@@ -29,6 +31,8 @@ cd floricultura-api-mini-projeto
 ```
 
 O `.\mvnw test` deve terminar com `Tests run: 63, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`.
+
+> O CI ([GitHub Actions](.github/workflows/ci.yml)) roda os mesmos testes em **Linux** (`ubuntu-latest`, Java 21 Temurin, `./mvnw -B test`) a cada push e pull request na `main`.
 
 ## Uso
 
@@ -213,4 +217,3 @@ docs/AI_USAGE.md                          registro do uso de IA
 - Banco persistente (PostgreSQL, por exemplo) com migrações (Flyway).
 - Autenticação (Spring Security).
 - Documentação OpenAPI/Swagger (springdoc-openapi).
-- CI com GitHub Actions rodando `mvnw test` a cada push.
