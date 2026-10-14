@@ -2,6 +2,7 @@ package br.edu.ufg.floricultura.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -113,6 +114,26 @@ class PedidoTest {
 	void anosNegativosLancamExcecao() {
 		assertThrows(IllegalArgumentException.class,
 				() -> Pedido.criar("Maria", Categoria.OURO, -1, new BigDecimal("200.00"), AMANHA, HOJE));
+	}
+
+	@ParameterizedTest(name = "valor bruto {0} -> {1}")
+	@CsvSource({
+		"200,     200.00",
+		"200.000, 200.00",  // zeros à direita não são casas significativas
+		"10.30,   10.30"
+	})
+	void valorBrutoEhNormalizadoParaEscala2(BigDecimal valorBruto, BigDecimal esperado) {
+		Pedido pedido = Pedido.criar("Maria", Categoria.OURO, 1, valorBruto, AMANHA, HOJE);
+
+		assertEquals(esperado, pedido.getValorBruto());  // BigDecimal.equals compara a escala
+	}
+
+	@Test
+	void valorBrutoComMaisDeDuasCasasSignificativasLancaExcecao() {
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> Pedido.criar("Maria", Categoria.OURO, 1, new BigDecimal("10.305"), AMANHA, HOJE));
+
+		assertTrue(e.getMessage().contains("no máximo 2 casas decimais"), e.getMessage());
 	}
 
 }
