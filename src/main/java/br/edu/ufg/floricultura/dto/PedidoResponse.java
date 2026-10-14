@@ -19,7 +19,16 @@ public record PedidoResponse(
 		StatusPedido status) {
 
 	public static PedidoResponse from(Pedido pedido) {
-		throw new UnsupportedOperationException("Não implementado");
+		return new PedidoResponse(
+				pedido.getId(),
+				pedido.getCliente(),
+				pedido.getCategoria(),
+				pedido.getAnosFidelidade(),
+				pedido.getValorBruto(),
+				pedido.getDescontoPercentual(),
+				pedido.getValorFinal(),
+				pedido.getDataEntrega(),
+				pedido.getStatus());
 	}
 
 }
