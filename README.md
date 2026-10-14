@@ -91,10 +91,16 @@ $amanha = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")
 @{ cliente = "Maria Silva"; categoria = "ouro"; anosFidelidade = 5; valorBruto = 200.00; dataEntrega = $amanha } |
     ConvertTo-Json | Out-File -Encoding ascii pedido.json
 
-curl.exe -i -X POST http://localhost:8080/pedidos -H "Content-Type: application/json" --data-binary "@pedido.json"
-curl.exe -i "http://localhost:8080/pedidos/entregas?data=$amanha"
-curl.exe -i -X PATCH http://localhost:8080/pedidos/1/entregue
+# cria o pedido e guarda o id devolvido (a última linha da resposta é o corpo JSON)
+$resposta = curl.exe -s -i -X POST http://localhost:8080/pedidos -H "Content-Type: application/json" --data-binary "@pedido.json"
+$resposta
+$id = ($resposta[-1] | ConvertFrom-Json).id
+
+curl.exe -s -i "http://localhost:8080/pedidos/entregas?data=$amanha"
+curl.exe -s -i -X PATCH "http://localhost:8080/pedidos/$id/entregue"
 ```
+
+Os ids são sequenciais e o banco começa vazio a cada inicialização. Por isso os exemplos usam o id devolvido pelo POST, em vez de um número fixo.
 
 ### Saídas reais (smoke test de 2026-10-14, com `dataEntrega` = 2026-10-15)
 
