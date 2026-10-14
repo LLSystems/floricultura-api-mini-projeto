@@ -45,6 +45,21 @@ O `.\mvnw test` deve terminar com `Tests run: 63, Failures: 0, Errors: 0, Skippe
 A API fica pronta quando o log mostrar `Started FloriculturaApplication`. Ela atende em `http://localhost:8080`.
 Para encerrar, use `Ctrl+C` no terminal em que ela está rodando.
 
+> **A API não tem página inicial.** Uma requisição para `http://localhost:8080/` responde `404`, e isso é esperado.
+> No navegador aparece a página de erro padrão do Spring (*Whitelabel Error Page*, "There was an unexpected error (type=Not Found, status=404)").
+> No `curl.exe` vem o 404 em JSON: `{"timestamp":"...","status":404,"error":"Not Found","path":"/"}`.
+> As rotas da API começam em `/pedidos`; veja a tabela em [Endpoints](#endpoints).
+
+**Verificação rápida** (confirma que a API está no ar):
+
+```powershell
+curl.exe -s http://localhost:8080/pedidos/entregas
+```
+
+Com o banco recém-iniciado, a resposta é `[]`: os dados ficam em memória, então a lista começa vazia.
+
+**Console do H2**: o banco pode ser inspecionado em `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:floricultura`, usuário `sa`, senha vazia). Veja o aviso em [Limitações](#limitações).
+
 ### Endpoints
 
 | Método | Rota | Descrição | Respostas |
@@ -205,7 +220,7 @@ docs/AI_USAGE.md                          registro do uso de IA
 ## Limitações
 
 - **H2 em memória**: os dados somem ao reiniciar a aplicação.
-- O console do H2 fica ligado em `/h2-console` (JDBC URL `jdbc:h2:mem:floricultura`, usuário `sa`, senha vazia). É útil para estudo, mas não deve ficar exposto em produção.
+- O console do H2 fica ligado (acesso descrito em [Uso](#uso)). É útil para estudo, mas não deve ficar exposto em produção.
 - Sem autenticação nem autorização.
 - Sem paginação na listagem de entregas.
 - Domínio fictício e simplificado (sem itens do pedido, endereço ou pagamento).
