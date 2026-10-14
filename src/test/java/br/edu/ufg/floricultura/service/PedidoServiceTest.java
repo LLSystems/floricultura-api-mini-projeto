@@ -138,4 +138,28 @@ class PedidoServiceTest {
 		assertSame(captor.getValue(), resultado);
 	}
 
+	// Data distante do relógio real: garante que "hoje" vem do Clock injetado, não de LocalDate.now()
+	private static final LocalDate HOJE_FUTURO = LocalDate.of(2030, 6, 15);
+	private static final Clock CLOCK_FUTURO =
+			Clock.fixed(Instant.parse("2030-06-15T12:00:00Z"), ZoneId.of("America/Sao_Paulo"));
+
+	@Test
+	void listarComDataNulaUsaDataDoClockInjetado() {
+		PedidoService serviceFuturo = new PedidoService(repository, CLOCK_FUTURO);
+
+		serviceFuturo.listarEntregasPendentes(null);
+
+		verify(repository).findByStatusAndDataEntrega(StatusPedido.PENDENTE, HOJE_FUTURO);
+	}
+
+	@Test
+	void criarValidaDataDeEntregaContraHojeDoClockInjetado() {
+		PedidoService serviceFuturo = new PedidoService(repository, CLOCK_FUTURO);
+
+		assertThrows(IllegalArgumentException.class,
+				() -> serviceFuturo.criar("Maria", Categoria.OURO, 5, new BigDecimal("200.00"), HOJE_FUTURO.minusDays(1)));
+
+		verify(repository, never()).save(any());
+	}
+
 }

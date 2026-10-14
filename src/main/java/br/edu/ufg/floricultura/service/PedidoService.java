@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import br.edu.ufg.floricultura.domain.Categoria;
 import br.edu.ufg.floricultura.domain.Pedido;
+import br.edu.ufg.floricultura.domain.StatusPedido;
+import br.edu.ufg.floricultura.exception.PedidoNaoEncontradoException;
 import br.edu.ufg.floricultura.repository.PedidoRepository;
 
 @Service
@@ -25,16 +27,21 @@ public class PedidoService {
 
 	public Pedido criar(String cliente, Categoria categoria, int anos,
 			BigDecimal valorBruto, LocalDate dataEntrega) {
-		throw new UnsupportedOperationException("Não implementado");
+		Pedido pedido = Pedido.criar(cliente, categoria, anos, valorBruto, dataEntrega, LocalDate.now(clock));
+		return repository.save(pedido);
 	}
 
 	public List<Pedido> listarEntregasPendentes(LocalDate data) {
-		throw new UnsupportedOperationException("Não implementado");
+		LocalDate dia = (data != null) ? data : LocalDate.now(clock);
+		return repository.findByStatusAndDataEntrega(StatusPedido.PENDENTE, dia);
 	}
 
 	@Transactional
 	public Pedido marcarEntregue(Long id) {
-		throw new UnsupportedOperationException("Não implementado");
+		Pedido pedido = repository.findById(id)
+				.orElseThrow(() -> new PedidoNaoEncontradoException("Pedido não encontrado: " + id));
+		pedido.marcarEntregue();
+		return repository.save(pedido);
 	}
 
 }
