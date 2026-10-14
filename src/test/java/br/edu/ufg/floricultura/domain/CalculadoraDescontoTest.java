@@ -55,4 +55,10 @@ class CalculadoraDescontoTest {
 				() -> CalculadoraDesconto.calcular(null, 5));
 	}
 
+	@Test
+	void anosMuitoGrandesNaoEstouramOTeto() {
+		// 600_000_000 * 5 excede Integer.MAX_VALUE
+		assertEquals(30, CalculadoraDesconto.calcular(Categoria.OURO, 600_000_000));
+	}
+
 }
