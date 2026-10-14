@@ -19,6 +19,9 @@
 - Verificação por mutação do `strip()` em `Categoria.deTexto`: removido temporariamente, o caso `" prata "` falhou (`Categoria desconhecida: " prata "`); restaurado, todos os testes voltaram a passar. Isso provou que o teste realmente cobre o tratamento de espaços.
 - Os casos de borda da revisão (categoria nula e overflow) entraram test-first: teste falhando primeiro, correção depois.
 - Mutation check extra no `PedidoService` (trocar `LocalDate.now(clock)` por `LocalDate.now()`, sem o `Clock`): a mutação sobreviveu porque a data real do sistema coincidia com a do clock fixo dos testes (2026-10-14). O próprio Claude Code detectou e corrigiu antes do commit do GREEN, com testes que usam um clock em 2030-06-15. Lição: um teste que passa por coincidência é um teste frágil.
+- Camada web, RED verificando o corpo do `ProblemDetail`: os testes de erro conferem `status` e `detail` no corpo, não só o código HTTP. Sem isso, os casos de JSON malformado e de data malformada teriam nascido verdes, porque o tratamento padrão do Spring já responde `400`. Com a checagem do corpo, eles falharam no RED pelo motivo certo (`No value at JSON path "$.status"`).
+- Mutation check do `@Valid`: ao remover o `@Valid`, um POST com corpo `{}` continuava recebendo `400`, porque `Categoria.deTexto(null)` lança `IllegalArgumentException`. A mutação só foi detectada porque o teste confere o mapa `campos` do `ProblemDetail` (erro por campo). Conferir apenas o código HTTP deixaria a mutação passar.
+- Smoke test real (aplicação no ar com `mvnw spring-boot:run` e chamadas `curl.exe`, sem MockMvc), em 2026-10-14: as 9 chamadas do fluxo responderam como especificado. Foram POST `201` com `Location`, desconto 25% e valor final 150.00; GET `200`; PATCH `200`; GET de novo sem o pedido entregue; PATCH de novo `409`; categoria "bronze" `400`; campos ausentes `400` com o mapa `campos`; data malformada `400`; id inexistente `404`.
 
 ## O que a IA errou
 
@@ -26,6 +29,8 @@
   - **Lição**: especificações em prompt também carregam bugs, e testes de borda são o que os revelam.
 - **Teste com `@CsvSource`**: a primeira versão do teste de `deTexto` usava `ignoreLeadingAndTrailingWhitespace = false` e `.trim()` no valor esperado, sem necessidade. O próprio Claude Code corrigiu antes do commit, já que espaços dentro de aspas simples no `@CsvSource` são preservados por padrão.
 - **Versão do Spring Boot**: o Spring Initializr só oferecia Spring Boot 4.x, enquanto o projeto pedia 3.x. O `pom.xml` foi escrito manualmente e fixado na 3.5.16 (última 3.x no Maven Central na data).
+
+- **Script do smoke test**: na primeira execução, o script PowerShell escrito pelo Claude Code usava `Write-Output` dentro de uma função. Isso contaminava o valor de retorno e quebrava a leitura do `id`. O POST dessa tentativa chegou a criar um pedido, que aparece nas listagens do smoke test. Foi corrigido com `Write-Host` e o fluxo foi refeito.
 
 ## O que revisei e validei
 
