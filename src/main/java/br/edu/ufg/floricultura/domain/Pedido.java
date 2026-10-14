@@ -16,6 +16,9 @@ import jakarta.persistence.Id;
 @Entity
 public class Pedido {
 
+	private static final int CEM_POR_CENTO = 100;
+	private static final int ESCALA_MONETARIA = 2;
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -41,6 +44,21 @@ public class Pedido {
 	protected Pedido() {
 	}
 
+	/**
+	 * Cria um pedido pendente, aplicando o desconto de fidelidade da categoria.
+	 * O valor final é {@code valorBruto * (100 - desconto) / 100}, com escala 2 e
+	 * arredondamento {@link RoundingMode#HALF_UP}.
+	 *
+	 * @param cliente     nome do cliente (não nulo nem em branco)
+	 * @param categoria   categoria de fidelidade
+	 * @param anos        anos de fidelidade (zero ou positivo)
+	 * @param valorBruto  valor antes do desconto (maior que zero)
+	 * @param dataEntrega data de entrega (igual ou posterior a {@code hoje})
+	 * @param hoje        data de referência, injetada para tornar o cálculo determinístico
+	 * @return o pedido criado, com status {@link StatusPedido#PENDENTE}
+	 * @throws IllegalArgumentException se algum dos dados for inválido
+	 * @see CalculadoraDesconto#calcular(Categoria, int)
+	 */
 	public static Pedido criar(String cliente, Categoria categoria, int anos,
 			BigDecimal valorBruto, LocalDate dataEntrega, LocalDate hoje) {
 		if (cliente == null || cliente.isBlank()) {
@@ -50,7 +68,7 @@ public class Pedido {
 			throw new IllegalArgumentException("Valor bruto deve ser maior que zero: " + valorBruto);
 		}
 		if (dataEntrega == null || dataEntrega.isBefore(hoje)) {
-			throw new IllegalArgumentException("Data de entrega não pode ser anterior a hoje: " + dataEntrega);
+			throw new IllegalArgumentException("Data de entrega não pode ser nula nem anterior a hoje: " + dataEntrega);
 		}
 		int desconto = CalculadoraDesconto.calcular(categoria, anos);
 
@@ -60,13 +78,22 @@ public class Pedido {
 		pedido.anosFidelidade = anos;
 		pedido.valorBruto = valorBruto;
 		pedido.descontoPercentual = desconto;
-		pedido.valorFinal = valorBruto.multiply(BigDecimal.valueOf(100 - desconto))
-				.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+		pedido.valorFinal = aplicarDesconto(valorBruto, desconto);
 		pedido.dataEntrega = dataEntrega;
 		pedido.status = StatusPedido.PENDENTE;
 		return pedido;
 	}
 
+	private static BigDecimal aplicarDesconto(BigDecimal valorBruto, int descontoPercentual) {
+		return valorBruto.multiply(BigDecimal.valueOf(CEM_POR_CENTO - descontoPercentual))
+				.divide(BigDecimal.valueOf(CEM_POR_CENTO), ESCALA_MONETARIA, RoundingMode.HALF_UP);
+	}
+
+	/**
+	 * Marca o pedido como entregue.
+	 *
+	 * @throws PedidoJaEntregueException se o pedido já estiver {@link StatusPedido#ENTREGUE}
+	 */
 	public void marcarEntregue() {
 		if (status == StatusPedido.ENTREGUE) {
 			throw new PedidoJaEntregueException("Pedido já foi entregue: " + id);
