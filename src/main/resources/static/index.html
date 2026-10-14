@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floricultura - Pedidos</title>
+<style>
+	:root {
+		--cor-fundo: #f6f7f4;
+		--cor-cartao: #ffffff;
+		--cor-texto: #1f2a1f;
+		--cor-suave: #5b665b;
+		--cor-borda: #d5dbd2;
+		--cor-primaria: #2f6b3a;
+		--cor-primaria-escura: #24542d;
+		--cor-erro-fundo: #fdecec;
+		--cor-erro-texto: #8a1c1c;
+		--cor-sucesso-fundo: #e8f5ea;
+		--cor-sucesso-texto: #1d5c2a;
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0;
+		font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+		background: var(--cor-fundo);
+		color: var(--cor-texto);
+		line-height: 1.45;
+	}
+	header { background: var(--cor-primaria); color: #fff; padding: 16px; }
+	header h1 { margin: 0 auto; max-width: 1080px; font-size: 1.4rem; }
+	main { max-width: 1080px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+	section {
+		background: var(--cor-cartao);
+		border: 1px solid var(--cor-borda);
+		border-radius: 8px;
+		padding: 16px;
+	}
+	h2 { margin: 0 0 12px; font-size: 1.15rem; }
+	.campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+	label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+	input, select, button { font: inherit; }
+	input, select {
+		width: 100%;
+		padding: 8px;
+		border: 1px solid var(--cor-borda);
+		border-radius: 6px;
+		background: #fff;
+	}
+	button {
+		padding: 8px 14px;
+		border: 0;
+		border-radius: 6px;
+		background: var(--cor-primaria);
+		color: #fff;
+		cursor: pointer;
+	}
+	button:hover:not(:disabled) { background: var(--cor-primaria-escura); }
+	button:disabled { opacity: 0.6; cursor: wait; }
+	.acoes { margin-top: 12px; }
+	.filtro { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 12px; }
+	.filtro div { min-width: 180px; }
+	#mensagens:empty { display: none; }
+	.mensagem { padding: 10px 12px; border-radius: 6px; margin: 0; }
+	.mensagem.erro { background: var(--cor-erro-fundo); color: var(--cor-erro-texto); }
+	.mensagem.sucesso { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso-texto); }
+	.mensagem p { margin: 0; }
+	.mensagem ul { margin: 6px 0 0; padding-left: 20px; }
+	.sr-only {
+		position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+		overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+	}
+	.tabela-rolagem { overflow-x: auto; }
+	table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+	th, td { padding: 8px; border-bottom: 1px solid var(--cor-borda); text-align: left; white-space: nowrap; }
+	td.numero, th.numero { text-align: right; }
+	td.cliente { white-space: normal; word-break: break-word; }
+	td.vazio { text-align: center; color: var(--cor-suave); }
+</style>
+</head>
+<body>
+<header>
+	<h1>Floricultura - Pedidos</h1>
+</header>
+
+<main>
+	<div id="mensagens" role="status" aria-live="polite"></div>
+
+	<section aria-labelledby="titulo-novo">
+		<h2 id="titulo-novo">Novo pedido</h2>
+		<!-- novalidate: as regras ficam na API; os erros dela são exibidos por campo -->
+		<form id="form-pedido" novalidate>
+			<div class="campos">
+				<div>
+					<label for="cliente">Cliente</label>
+					<input id="cliente" name="cliente" type="text" autocomplete="off" required>
+				</div>
+				<div>
+					<label for="categoria">Categoria</label>
+					<select id="categoria" name="categoria" required>
+						<option value="">Selecione</option>
+						<option value="ouro">Ouro</option>
+						<option value="prata">Prata</option>
+					</select>
+				</div>
+				<div>
+					<label for="anos">Anos de fidelidade</label>
+					<input id="anos" name="anos" type="number" min="0" step="1" required>
+				</div>
+				<div>
+					<label for="valor">Valor bruto (R$)</label>
+					<input id="valor" name="valor" type="number" min="0.01" step="0.01" required>
+				</div>
+				<div>
+					<label for="data-entrega">Data de entrega</label>
+					<input id="data-entrega" name="data-entrega" type="date" required>
+				</div>
+			</div>
+			<div class="acoes">
+				<button id="btn-criar" type="submit">Criar pedido</button>
+			</div>
+		</form>
+	</section>
+
+	<section aria-labelledby="titulo-entregas">
+		<h2 id="titulo-entregas">Entregas pendentes</h2>
+		<div class="filtro">
+			<div>
+				<label for="data-filtro">Data das entregas</label>
+				<input id="data-filtro" name="data-filtro" type="date">
+			</div>
+			<button id="btn-atualizar" type="button">Atualizar</button>
+		</div>
+		<div class="tabela-rolagem">
+			<table id="tabela-entregas">
+				<thead>
+					<tr>
+						<th>Id</th>
+						<th>Cliente</th>
+						<th>Categoria</th>
+						<th class="numero">Anos</th>
+						<th class="numero">Valor bruto</th>
+						<th class="numero">Desconto</th>
+						<th class="numero">Valor final</th>
+						<th>Data</th>
+						<th>Status</th>
+						<th><span class="sr-only">Ações</span></th>
+					</tr>
+				</thead>
+				<tbody id="corpo-entregas"></tbody>
+			</table>
+		</div>
+	</section>
+</main>
+
+<script>
+	"use strict";
+
+	const COLUNAS = 10;
+	const ROTULOS_CAMPOS = {
+		cliente: "Cliente",
+		categoria: "Categoria",
+		anosFidelidade: "Anos de fidelidade",
+		valorBruto: "Valor bruto",
+		dataEntrega: "Data de entrega"
+	};
+	const reais = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+	const form = document.getElementById("form-pedido");
+	const btnCriar = document.getElementById("btn-criar");
+	const campoData = document.getElementById("data-entrega");
+	const filtroData = document.getElementById("data-filtro");
+	const corpoTabela = document.getElementById("corpo-entregas");
+	const areaMensagens = document.getElementById("mensagens");
+
+	// "Amanhã" no fuso LOCAL. Não usar toISOString(), que converte para UTC e pode avançar um dia à noite.
+	function amanhaLocal() {
+		const d = new Date();
+		d.setDate(d.getDate() + 1);
+		const mes = String(d.getMonth() + 1).padStart(2, "0");
+		const dia = String(d.getDate()).padStart(2, "0");
+		return d.getFullYear() + "-" + mes + "-" + dia;
+	}
+
+	function formatarData(iso) {
+		const partes = String(iso).split("-");
+		return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : String(iso);
+	}
+
+	function formatarCategoria(categoria) {
+		const texto = String(categoria).toLowerCase();
+		return texto.charAt(0).toUpperCase() + texto.slice(1);
+	}
+
+	function limparMensagens() {
+		areaMensagens.replaceChildren();
+	}
+
+	function mostrarSucesso(texto) {
+		const p = document.createElement("p");
+		p.className = "mensagem sucesso";
+		p.textContent = texto;
+		areaMensagens.replaceChildren(p);
+	}
+
+	function mostrarErro(texto, itens) {
+		const div = document.createElement("div");
+		div.className = "mensagem erro";
+		div.setAttribute("role", "alert");
+		const p = document.createElement("p");
+		p.textContent = texto;
+		div.appendChild(p);
+		if (itens && itens.length > 0) {
+			const ul = document.createElement("ul");
+			for (const item of itens) {
+				const li = document.createElement("li");
+				li.textContent = item;
+				ul.appendChild(li);
+			}
+			div.appendChild(ul);
+		}
+		areaMensagens.replaceChildren(div);
+	}
+
+	// Converte uma resposta de erro (ProblemDetail) em mensagem na página.
+	function mostrarProblema(status, corpo) {
+		const detalhe = corpo && corpo.detail ? corpo.detail : "Erro inesperado (HTTP " + status + ").";
+		const itens = [];
+		if (status === 400 && corpo && corpo.campos && typeof corpo.campos === "object") {
+			for (const [campo, mensagem] of Object.entries(corpo.campos)) {
+				itens.push((ROTULOS_CAMPOS[campo] || campo) + ": " + mensagem);
+			}
+		}
+		mostrarErro(detalhe, itens);
+	}
+
+	function mostrarFalhaDeRede() {
+		mostrarErro("Não foi possível falar com a API. Verifique se a aplicação está no ar e tente de novo.");
+	}
+
+	// Faz a chamada e devolve { ok, status, corpo }. Lança erro só em falha de rede.
+	async function chamarApi(metodo, url, dados) {
+		const opcoes = { method: metodo, headers: { "Accept": "application/json" } };
+		if (dados !== undefined) {
+			opcoes.headers["Content-Type"] = "application/json";
+			opcoes.body = JSON.stringify(dados);
+		}
+		const resposta = await fetch(url, opcoes);
+		let corpo = null;
+		const tipo = resposta.headers.get("Content-Type") || "";
+		if (tipo.includes("json")) {
+			try { corpo = await resposta.json(); } catch (e) { corpo = null; }
+		}
+		return { ok: resposta.ok, status: resposta.status, corpo: corpo };
+	}
+
+	function celula(texto, classe) {
+		const td = document.createElement("td");
+		if (classe) td.className = classe;
+		td.textContent = texto;
+		return td;
+	}
+
+	function linhaVazia(texto) {
+		const tr = document.createElement("tr");
+		const td = celula(texto, "vazio");
+		td.colSpan = COLUNAS;
+		tr.appendChild(td);
+		return tr;
+	}
+
+	function renderizarEntregas(pedidos) {
+		if (!Array.isArray(pedidos) || pedidos.length === 0) {
+			corpoTabela.replaceChildren(linhaVazia("Nenhuma entrega pendente"));
+			return;
+		}
+		const linhas = pedidos.map(function (pedido) {
+			const tr = document.createElement("tr");
+			tr.dataset.id = String(pedido.id);
+			tr.appendChild(celula(String(pedido.id)));
+			tr.appendChild(celula(String(pedido.cliente), "cliente"));
+			tr.appendChild(celula(formatarCategoria(pedido.categoria)));
+			tr.appendChild(celula(String(pedido.anosFidelidade), "numero"));
+			tr.appendChild(celula(reais.format(Number(pedido.valorBruto)), "numero"));
+			tr.appendChild(celula(pedido.descontoPercentual + "%", "numero"));
+			tr.appendChild(celula(reais.format(Number(pedido.valorFinal)), "numero"));
+			tr.appendChild(celula(formatarData(pedido.dataEntrega)));
+			tr.appendChild(celula(String(pedido.status)));
+
+			const tdAcao = document.createElement("td");
+			const botao = document.createElement("button");
+			botao.type = "button";
+			botao.textContent = "Marcar como entregue";
+			botao.addEventListener("click", function () { marcarEntregue(pedido.id, botao); });
+			tdAcao.appendChild(botao);
+			tr.appendChild(tdAcao);
+			return tr;
+		});
+		corpoTabela.replaceChildren(...linhas);
+	}
+
+	async function carregarEntregas() {
+		const data = filtroData.value;
+		const url = "/pedidos/entregas" + (data ? "?data=" + encodeURIComponent(data) : "");
+		try {
+			const r = await chamarApi("GET", url);
+			if (r.ok) {
+				renderizarEntregas(r.corpo);
+			} else {
+				corpoTabela.replaceChildren(linhaVazia("Não foi possível carregar as entregas."));
+				mostrarProblema(r.status, r.corpo);
+			}
+		} catch (e) {
+			corpoTabela.replaceChildren(linhaVazia("Não foi possível carregar as entregas."));
+			mostrarFalhaDeRede();
+		}
+	}
+
+	async function marcarEntregue(id, botao) {
+		botao.disabled = true;
+		try {
+			const r = await chamarApi("PATCH", "/pedidos/" + encodeURIComponent(id) + "/entregue");
+			if (r.ok) {
+				mostrarSucesso("Pedido #" + r.corpo.id + " marcado como entregue.");
+			} else {
+				mostrarProblema(r.status, r.corpo);
+			}
+			await carregarEntregas();
+		} catch (e) {
+			mostrarFalhaDeRede();
+			botao.disabled = false;
+		}
+	}
+
+	function numeroOuNulo(valor) {
+		return valor.trim() === "" ? null : Number(valor);
+	}
+
+	form.addEventListener("submit", async function (evento) {
+		evento.preventDefault();
+		limparMensagens();
+		const dados = {
+			cliente: document.getElementById("cliente").value,
+			categoria: document.getElementById("categoria").value,
+			anosFidelidade: numeroOuNulo(document.getElementById("anos").value),
+			valorBruto: numeroOuNulo(document.getElementById("valor").value),
+			dataEntrega: campoData.value || null
+		};
+		btnCriar.disabled = true;
+		try {
+			const r = await chamarApi("POST", "/pedidos", dados);
+			if (r.ok) {
+				const p = r.corpo;
+				mostrarSucesso("Pedido #" + p.id + " criado: desconto de " + p.descontoPercentual
+						+ "%, valor final " + reais.format(Number(p.valorFinal)) + ".");
+				form.reset();
+				campoData.value = amanhaLocal();
+				filtroData.value = p.dataEntrega;
+				await carregarEntregas();
+			} else {
+				mostrarProblema(r.status, r.corpo);
+			}
+		} catch (e) {
+			mostrarFalhaDeRede();
+		} finally {
+			btnCriar.disabled = false;
+		}
+	});
+
+	filtroData.addEventListener("change", carregarEntregas);
+	document.getElementById("btn-atualizar").addEventListener("click", carregarEntregas);
+
+	campoData.value = amanhaLocal();
+	filtroData.value = amanhaLocal();
+	carregarEntregas();
+</script>
+</body>
+</html>
