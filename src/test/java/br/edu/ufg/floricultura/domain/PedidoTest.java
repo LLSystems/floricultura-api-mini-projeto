@@ -97,4 +97,22 @@ class PedidoTest {
 		assertThrows(PedidoJaEntregueException.class, pedido::marcarEntregue);
 	}
 
+	@Test
+	void hojeNuloLancaExcecao() {
+		assertThrows(IllegalArgumentException.class,
+				() -> Pedido.criar("Maria", Categoria.OURO, 5, new BigDecimal("200.00"), AMANHA, null));
+	}
+
+	@Test
+	void categoriaNulaLancaExcecao() {
+		assertThrows(IllegalArgumentException.class,
+				() -> Pedido.criar("Maria", null, 5, new BigDecimal("200.00"), AMANHA, HOJE));
+	}
+
+	@Test
+	void anosNegativosLancamExcecao() {
+		assertThrows(IllegalArgumentException.class,
+				() -> Pedido.criar("Maria", Categoria.OURO, -1, new BigDecimal("200.00"), AMANHA, HOJE));
+	}
+
 }
