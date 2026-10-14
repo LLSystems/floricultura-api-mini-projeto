@@ -52,7 +52,9 @@ public class Pedido {
 	 * @param cliente     nome do cliente (não nulo nem em branco)
 	 * @param categoria   categoria de fidelidade
 	 * @param anos        anos de fidelidade (zero ou positivo)
-	 * @param valorBruto  valor antes do desconto (maior que zero)
+	 * @param valorBruto  valor antes do desconto (maior que zero, com no máximo 2 casas decimais
+	 *                    significativas); é normalizado para escala 2 sem arredondamento
+	 *                    (ex.: {@code 200} e {@code 200.000} viram {@code 200.00}; {@code 10.305} é rejeitado)
 	 * @param dataEntrega data de entrega (igual ou posterior a {@code hoje})
 	 * @param hoje        data de referência (não nula), injetada para tornar o cálculo determinístico
 	 * @return o pedido criado, com status {@link StatusPedido#PENDENTE}
@@ -67,6 +69,10 @@ public class Pedido {
 		if (valorBruto == null || valorBruto.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Valor bruto deve ser maior que zero: " + valorBruto);
 		}
+		if (valorBruto.stripTrailingZeros().scale() > ESCALA_MONETARIA) {
+			throw new IllegalArgumentException("Valor bruto aceita no máximo 2 casas decimais: " + valorBruto);
+		}
+		valorBruto = valorBruto.setScale(ESCALA_MONETARIA);  // sem arredondamento: não há casa significativa a descartar
 		if (hoje == null) {
 			throw new IllegalArgumentException("Data de referência (hoje) não pode ser nula");
 		}
