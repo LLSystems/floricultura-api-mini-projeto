@@ -28,7 +28,7 @@ cd floricultura-api-mini-projeto
 .\mvnw test
 ```
 
-O `.\mvnw test` deve terminar com `Tests run: 59, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`.
+O `.\mvnw test` deve terminar com `Tests run: 63, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`.
 
 ## Uso
 
@@ -102,16 +102,17 @@ curl.exe -s -i -X PATCH "http://localhost:8080/pedidos/$id/entregue"
 
 Os ids são sequenciais e o banco começa vazio a cada inicialização. Por isso os exemplos usam o id devolvido pelo POST, em vez de um número fixo.
 
-### Saídas reais (smoke test de 2026-10-14, com `dataEntrega` = 2026-10-15)
+### Saídas reais (execuções de 2026-10-14, com `dataEntrega` = 2026-10-15)
 
-Criar (`POST /pedidos`, OURO, 5 anos, R$ 200,00):
+Criar (`POST /pedidos`, OURO, 5 anos, corpo com `"valorBruto":200`; execução após a normalização de escala, banco recém-iniciado):
 
 ```
 HTTP/1.1 201
-Location: /pedidos/2
-Content-Type: application/json
-{"id":2,"cliente":"Maria Silva","categoria":"OURO","anosFidelidade":5,"valorBruto":200,"descontoPercentual":25,"valorFinal":150.00,"dataEntrega":"2026-10-15","status":"PENDENTE"}
+Location: /pedidos/1
+{"id":1,"cliente":"Maria Silva","categoria":"OURO","anosFidelidade":5,"valorBruto":200.00,"descontoPercentual":25,"valorFinal":150.00,"dataEntrega":"2026-10-15","status":"PENDENTE"}
 ```
+
+Os blocos abaixo vêm do smoke test completo, em que o pedido criado recebeu o id 2.
 
 Marcar como entregue (`PATCH /pedidos/2/entregue`):
 
@@ -128,6 +129,9 @@ PATCH /pedidos/2/entregue (de novo)            -> 409
 
 POST /pedidos com "categoria": "bronze"        -> 400
 {"type":"about:blank","title":"Requisição inválida","status":400,"detail":"Categoria desconhecida: \"bronze\"","instance":"/pedidos"}
+
+POST /pedidos com "valorBruto": 10.305          -> 400
+{"type":"about:blank","title":"Requisição inválida","status":400,"detail":"Valor bruto aceita no máximo 2 casas decimais: 10.305","instance":"/pedidos"}
 
 POST /pedidos com corpo {}                      -> 400
 {"type":"about:blank","title":"Dados inválidos","status":400,"detail":"Um ou mais campos obrigatórios estão ausentes ou em branco","instance":"/pedidos","campos":{"cliente":"não deve estar em branco","categoria":"não deve estar em branco","valorBruto":"não deve ser nulo","anosFidelidade":"não deve ser nulo","dataEntrega":"não deve ser nulo"}}
@@ -149,6 +153,7 @@ PATCH /pedidos/999/entregue                     -> 404
   - categoria desconhecida;
   - anos de fidelidade negativos;
   - valor bruto menor ou igual a zero;
+  - valor bruto com mais de 2 casas decimais (ex.: `10.305`). Valores com até 2 casas são normalizados para 2 casas, sem arredondamento: `200` e `200.000` viram `200.00`;
   - data de entrega anterior a hoje (hoje é aceito);
   - JSON malformado ou data em formato inválido.
 - **Status**: o pedido nasce `PENDENTE` e vai para `ENTREGUE`. Tentar entregar de novo responde `409`; pedido inexistente responde `404`.
@@ -159,11 +164,11 @@ PATCH /pedidos/999/entregue                     -> 404
 .\mvnw test
 ```
 
-São 59 testes:
+São 63 testes:
 
 | Tipo | Classe | Testes |
 |---|---|---|
-| Unitário de domínio (JUnit 5, sem Spring) | `CalculadoraDescontoTest`, `PedidoTest` | 15 + 21 |
+| Unitário de domínio (JUnit 5, sem Spring) | `CalculadoraDescontoTest`, `PedidoTest` | 15 + 25 |
 | Serviço com Mockito (`Clock` fixo) | `PedidoServiceTest` | 9 |
 | Repositório com `@DataJpaTest` (H2) | `PedidoRepositoryTest` | 1 |
 | Web com `@WebMvcTest` + `@MockitoBean` | `PedidoControllerTest` | 11 |
