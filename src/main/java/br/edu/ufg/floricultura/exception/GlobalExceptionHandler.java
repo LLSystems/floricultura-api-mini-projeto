@@ -1,5 +1,6 @@
 package br.edu.ufg.floricultura.exception;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,7 +41,7 @@ public class GlobalExceptionHandler {
 	public ProblemDetail tratarParametroInvalido(MethodArgumentTypeMismatchException e) {
 		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido",
 				"Valor inválido para o parâmetro '" + e.getName() + "': " + e.getValue()
-						+ (e.getName().equals("data") ? " (formato esperado: AAAA-MM-DD)" : ""));
+						+ (LocalDate.class.equals(e.getRequiredType()) ? " (formato esperado: AAAA-MM-DD)" : ""));
 	}
 
 	@ExceptionHandler(PedidoNaoEncontradoException.class)

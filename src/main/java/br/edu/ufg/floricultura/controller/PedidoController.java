@@ -32,6 +32,12 @@ public class PedidoController {
 		this.service = service;
 	}
 
+	/**
+	 * {@code POST /pedidos}: cria um pedido.
+	 *
+	 * @return 201 com cabeçalho {@code Location: /pedidos/{id}} e o pedido criado;
+	 *         400 se faltar campo, a categoria for desconhecida ou alguma regra do domínio for violada
+	 */
 	@PostMapping
 	public ResponseEntity<PedidoResponse> criar(@Valid @RequestBody PedidoRequest request) {
 		Pedido pedido = service.criar(
@@ -44,6 +50,12 @@ public class PedidoController {
 				.body(PedidoResponse.from(pedido));
 	}
 
+	/**
+	 * {@code GET /pedidos/entregas?data=AAAA-MM-DD}: lista as entregas pendentes de um dia.
+	 *
+	 * @param data dia das entregas (opcional; se ausente, usa a data atual)
+	 * @return 200 com a lista (possivelmente vazia); 400 se a data estiver em formato inválido
+	 */
 	@GetMapping("/entregas")
 	public List<PedidoResponse> listarEntregasPendentes(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
@@ -52,6 +64,11 @@ public class PedidoController {
 				.toList();
 	}
 
+	/**
+	 * {@code PATCH /pedidos/{id}/entregue}: marca o pedido como entregue.
+	 *
+	 * @return 200 com o pedido atualizado; 404 se não existir; 409 se já estiver entregue
+	 */
 	@PatchMapping("/{id}/entregue")
 	public PedidoResponse marcarEntregue(@PathVariable Long id) {
 		return PedidoResponse.from(service.marcarEntregue(id));
