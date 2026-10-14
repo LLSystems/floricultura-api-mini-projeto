@@ -3,7 +3,7 @@
 [![CI](https://github.com/LLSystems/floricultura-api-mini-projeto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LLSystems/floricultura-api-mini-projeto/actions/workflows/ci.yml)
 
 Micro-API REST de pedidos de uma floricultura fictícia, desenvolvida como mini-projeto acadêmico (UFG/AKCIT).
-Cadastra pedidos com desconto de fidelidade, lista as entregas pendentes de um dia e registra a entrega.
+Cadastra pedidos com desconto de fidelidade, lista as entregas pendentes de um dia e registra a entrega. Inclui uma [interface web](#interface-web) simples, servida pela própria aplicação.
 
 ## Tecnologias
 
@@ -12,6 +12,7 @@ Cadastra pedidos com desconto de fidelidade, lista as entregas pendentes de um d
 - H2 Database (em memória)
 - JUnit 5, Mockito, Spring Boot Test (MockMvc, `@DataJpaTest`, `@WebMvcTest`)
 - Maven (via Maven Wrapper, sem instalação prévia)
+- Interface web em HTML, CSS e JavaScript puro (sem frameworks nem dependências externas)
 
 ## Requisitos
 
@@ -30,7 +31,7 @@ cd floricultura-api-mini-projeto
 .\mvnw test
 ```
 
-O `.\mvnw test` deve terminar com `Tests run: 63, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`.
+O `.\mvnw test` deve terminar com `Tests run: 65, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`.
 
 > O CI ([GitHub Actions](.github/workflows/ci.yml)) roda os mesmos testes em **Linux** (`ubuntu-latest`, Java 21 Temurin, `./mvnw -B test`) a cada push e pull request na `main`.
 
@@ -45,9 +46,9 @@ O `.\mvnw test` deve terminar com `Tests run: 63, Failures: 0, Errors: 0, Skippe
 A API fica pronta quando o log mostrar `Started FloriculturaApplication`. Ela atende em `http://localhost:8080`.
 Para encerrar, use `Ctrl+C` no terminal em que ela está rodando.
 
-> **A API não tem página inicial.** Uma requisição para `http://localhost:8080/` responde `404`, e isso é esperado.
-> No navegador aparece a página de erro padrão do Spring (*Whitelabel Error Page*, "There was an unexpected error (type=Not Found, status=404)").
-> No `curl.exe` vem o 404 em JSON: `{"timestamp":"...","status":404,"error":"Not Found","path":"/"}`.
+> **A raiz serve a interface web.** Abrir `http://localhost:8080/` mostra a página descrita em [Interface web](#interface-web).
+> Só rotas **inexistentes** respondem `404`. No navegador aparece a página de erro padrão do Spring (*Whitelabel Error Page*, "There was an unexpected error (type=Not Found, status=404)").
+> No `curl.exe` vem o 404 em JSON: `{"timestamp":"...","status":404,"error":"Not Found","path":"..."}`.
 > As rotas da API começam em `/pedidos`; veja a tabela em [Endpoints](#endpoints).
 
 **Verificação rápida** (confirma que a API está no ar):
@@ -162,6 +163,24 @@ PATCH /pedidos/999/entregue                     -> 404
 {"type":"about:blank","title":"Pedido não encontrado","status":404,"detail":"Pedido não encontrado: 999","instance":"/pedidos/999/entregue"}
 ```
 
+## Interface web
+
+Com a aplicação no ar ([Subir a aplicação](#subir-a-aplicação)), abra **http://localhost:8080** no navegador. A página usa a mesma API descrita acima e permite:
+
+- **Criar um pedido**: cliente, categoria (Ouro/Prata), anos de fidelidade, valor bruto e data de entrega. A data já vem preenchida com amanhã, calculado no fuso local. A mensagem de sucesso mostra o desconto e o valor final.
+- **Ver as entregas pendentes** de uma data (padrão: amanhã), em tabela com os valores em reais.
+- **Marcar um pedido como entregue**: ele sai da lista.
+- **Ver os erros da API na própria página**: o `detail` do `ProblemDetail`, e a lista de erros por campo quando há campos obrigatórios ausentes. Falha de rede tem mensagem própria.
+
+**Como testar à mão:**
+
+1. Crie um pedido OURO, 5 anos, valor 200: a lista mostra desconto 25% e valor final R$ 150,00.
+2. Crie um pedido OURO, 10 anos, valor 100: o teto de 30% leva o valor final a R$ 70,00.
+3. Clique em "Marcar como entregue" em um deles: ele sai da lista.
+4. Envie o formulário com os campos vazios: aparece um erro para cada campo.
+
+A página é um único arquivo estático (`src/main/resources/static/index.html`). Todo dado vindo da API ou do usuário é inserido como texto (`textContent`), nunca como HTML.
+
 ## Regras de negócio
 
 - **Categorias de fidelidade**: `OURO` (taxa 5) e `PRATA` (taxa 3). O texto é aceito sem diferenciar maiúsculas/minúsculas e ignorando espaços nas pontas (`" Ouro "` vira `OURO`).
@@ -183,10 +202,11 @@ PATCH /pedidos/999/entregue                     -> 404
 .\mvnw test
 ```
 
-São 63 testes:
+São 65 testes:
 
 | Tipo | Classe | Testes |
 |---|---|---|
+| Página inicial (`@SpringBootTest` + MockMvc): `/` encaminha para `index.html`, que tem os elementos principais | `PaginaInicialTest` | 2 |
 | Unitário de domínio (JUnit 5, sem Spring) | `CalculadoraDescontoTest`, `PedidoTest` | 15 + 25 |
 | Serviço com Mockito (`Clock` fixo) | `PedidoServiceTest` | 9 |
 | Repositório com `@DataJpaTest` (H2) | `PedidoRepositoryTest` | 1 |
@@ -206,6 +226,9 @@ src/main/java/br/edu/ufg/floricultura/
 ├── exception/    GlobalExceptionHandler, PedidoJaEntregueException, PedidoNaoEncontradoException
 ├── repository/   PedidoRepository
 └── service/      PedidoService
+src/main/resources/
+├── application.properties
+└── static/index.html                     interface web (HTML + CSS + JavaScript)
 src/test/java/br/edu/ufg/floricultura/   (mesma estrutura de pacotes)
 docs/AI_USAGE.md                          registro do uso de IA
 ```
@@ -221,7 +244,8 @@ docs/AI_USAGE.md                          registro do uso de IA
 
 - **H2 em memória**: os dados somem ao reiniciar a aplicação.
 - O console do H2 fica ligado (acesso descrito em [Uso](#uso)). É útil para estudo, mas não deve ficar exposto em produção.
-- Sem autenticação nem autorização.
+- Sem autenticação nem autorização, tanto na API quanto na interface web.
+- A interface web não tem testes automatizados de JavaScript. Os testes automáticos conferem só que a página é servida e tem os elementos principais. O comportamento foi verificado com um navegador automatizado (Playwright, Chromium headless), executado fora do repositório.
 - Sem paginação na listagem de entregas.
 - Domínio fictício e simplificado (sem itens do pedido, endereço ou pagamento).
 - Spring Boot 3.5.x por escolha do `pom.xml`. O Spring Initializr já oferece só a 4.x.
