@@ -12,7 +12,7 @@ public final class CalculadoraDesconto {
 		if (anos < 0) {
 			throw new IllegalArgumentException("Anos não pode ser negativo: " + anos);
 		}
-		return Math.min(anos * categoria.getTaxa(), 30);
+		return (int) Math.min((long) anos * categoria.getTaxa(), 30);
 	}
 
 }
